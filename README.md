@@ -21,21 +21,21 @@ A fast, social party game built with Next.js. Create a lobby, join with friends,
 
 ## Getting started
 
-```bash
+\`\`\`bash
 pnpm install
 pnpm dev
-```
+\`\`\`
 
 Open <http://localhost:3000>
 
 ## Scripts
 
-```bash
+\`\`\`bash
 pnpm dev
 pnpm build
 pnpm start
 pnpm lint
-```
+\`\`\`
 
 ## Project structure
 
