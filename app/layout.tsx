@@ -8,9 +8,8 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Mister White - Juego del Impostor",
-  description: "¿Quién es Mister White? Un juego de dedución y misterio para jugar con amigos",
-  generator: "v0.app",
+  title: "Juego del Impostor",
+  description: "¿Quién es el impostor? Un juego de dedución y misterio para jugar con amigos",
   icons: {
     icon: [
       {
