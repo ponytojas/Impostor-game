@@ -1,30 +1,47 @@
-# Impostor game app
+# Impostor Game
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+A fast, social party game built with Next.js. Create a lobby, join with friends, and play quick rounds to spot the impostor.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/ponytojas1s-projects/v0-impostor-game-app)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/sONi0JSQfY4)
+## Live site
 
-## Overview
+<https://impostor.ponytojas.dev>
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## Features
 
-## Deployment
+- Lobby flow for quick game setup
+- Responsive UI for desktop and mobile play
+- Tailwind-based design tokens and shared UI primitives
 
-Your project is live at:
+## Tech stack
 
-**[https://vercel.com/ponytojas1s-projects/v0-impostor-game-app](https://vercel.com/ponytojas1s-projects/v0-impostor-game-app)**
+- Next.js App Router
+- React + TypeScript
+- Tailwind CSS
+- shadcn-style UI components
 
-## Build your app
+## Getting started
 
-Continue building your app on:
+```bash
+pnpm install
+pnpm dev
+```
 
-**[https://v0.app/chat/sONi0JSQfY4](https://v0.app/chat/sONi0JSQfY4)**
+Open <http://localhost:3000>
 
-## How It Works
+## Scripts
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+```bash
+pnpm dev
+pnpm build
+pnpm start
+pnpm lint
+```
+
+## Project structure
+
+- `app/` app router entry points and global styles
+- `components/` shared components
+- `components/ui/` UI primitives
+- `lib/` utilities and data
+- `public/` static assets
+- `styles/` additional global CSS
