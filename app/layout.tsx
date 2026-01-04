@@ -12,20 +12,7 @@ export const metadata: Metadata = {
   title: "Juego del Impostor",
   description: "¿Quién es el impostor? Un juego de dedución y misterio para jugar con amigos",
   icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
+    icon: "/icon.svg",
     apple: "/apple-icon.png",
   },
 }
