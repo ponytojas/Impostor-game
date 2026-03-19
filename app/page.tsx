@@ -27,7 +27,7 @@ export default function ImpostorGame() {
   const [timers, setTimers] = useState<TimerState>({})
   const [mounted, setMounted] = useState(false)
   const [crazyMode, setCrazyMode] = useState(false)
-  const [currentMode, setCurrentMode] = useState<"normal" | "all-impostors" | "one-innocent">("normal")
+  const [currentMode, setCurrentMode] = useState<"normal" | "all-impostors" | "one-innocent" | "no-impostor">("normal")
   const intervalRefs = useRef<{ [key: number]: NodeJS.Timeout }>({})
   const { resolvedTheme, setTheme, theme } = useTheme()
 
@@ -68,35 +68,36 @@ export default function ImpostorGame() {
     const palabraSeleccionada = palabrasJuego[Math.floor(Math.random() * palabrasJuego.length)]
     const shuffledNames = [...playerNames].sort(() => Math.random() - 0.5)
 
-    let gameMode: "normal" | "all-impostors" | "one-innocent" = "normal"
+    let gameMode: "normal" | "all-impostors" | "one-innocent" | "no-impostor" = "normal"
     
     if (crazyMode && Math.random() < 0.2) {
-      gameMode = Math.random() < 0.5 ? "all-impostors" : "one-innocent"
+      const crazyModes: ("all-impostors" | "one-innocent" | "no-impostor")[] = ["all-impostors", "one-innocent", "no-impostor"]
+      gameMode = crazyModes[Math.floor(Math.random() * crazyModes.length)]
     }
 
-    let gamePlayers: Player[]
-
+    const roles: string[] = []
+    
     if (gameMode === "all-impostors") {
-      gamePlayers = shuffledNames.map((name) => ({
-        name,
-        role: "Impostor",
-        revealed: false,
-      }))
+      shuffledNames.forEach(() => roles.push("Impostor"))
     } else if (gameMode === "one-innocent") {
-      const innocentIndex = Math.floor(Math.random() * shuffledNames.length)
-      gamePlayers = shuffledNames.map((name, index) => ({
-        name,
-        role: index === innocentIndex ? palabraSeleccionada : "Impostor",
-        revealed: false,
-      }))
+      shuffledNames.forEach(() => roles.push("Impostor"))
+      const innocentIndex = Math.floor(Math.random() * roles.length)
+      roles[innocentIndex] = palabraSeleccionada
+    } else if (gameMode === "no-impostor") {
+      shuffledNames.forEach(() => roles.push(palabraSeleccionada))
     } else {
-      const impostorIndex = Math.floor(Math.random() * shuffledNames.length)
-      gamePlayers = shuffledNames.map((name, index) => ({
-        name,
-        role: index === impostorIndex ? "Impostor" : palabraSeleccionada,
-        revealed: false,
-      }))
+      shuffledNames.forEach(() => roles.push(palabraSeleccionada))
+      const impostorIndex = Math.floor(Math.random() * roles.length)
+      roles[impostorIndex] = "Impostor"
     }
+
+    const shuffledRoles = [...roles].sort(() => Math.random() - 0.5)
+    
+    const gamePlayers: Player[] = shuffledNames.map((name, index) => ({
+      name,
+      role: shuffledRoles[index],
+      revealed: false,
+    }))
 
     setCurrentMode(gameMode)
     setPlayers(gamePlayers)
@@ -162,35 +163,36 @@ export default function ImpostorGame() {
     const palabraSeleccionada = palabrasJuego[Math.floor(Math.random() * palabrasJuego.length)]
     const shuffledNames = [...playerNames].sort(() => Math.random() - 0.5)
 
-    let gameMode: "normal" | "all-impostors" | "one-innocent" = "normal"
+    let gameMode: "normal" | "all-impostors" | "one-innocent" | "no-impostor" = "normal"
     
     if (crazyMode && Math.random() < 0.2) {
-      gameMode = Math.random() < 0.5 ? "all-impostors" : "one-innocent"
+      const crazyModes: ("all-impostors" | "one-innocent" | "no-impostor")[] = ["all-impostors", "one-innocent", "no-impostor"]
+      gameMode = crazyModes[Math.floor(Math.random() * crazyModes.length)]
     }
 
-    let gamePlayers: Player[]
-
+    const roles: string[] = []
+    
     if (gameMode === "all-impostors") {
-      gamePlayers = shuffledNames.map((name) => ({
-        name,
-        role: "Impostor",
-        revealed: false,
-      }))
+      shuffledNames.forEach(() => roles.push("Impostor"))
     } else if (gameMode === "one-innocent") {
-      const innocentIndex = Math.floor(Math.random() * shuffledNames.length)
-      gamePlayers = shuffledNames.map((name, index) => ({
-        name,
-        role: index === innocentIndex ? palabraSeleccionada : "Impostor",
-        revealed: false,
-      }))
+      shuffledNames.forEach(() => roles.push("Impostor"))
+      const innocentIndex = Math.floor(Math.random() * roles.length)
+      roles[innocentIndex] = palabraSeleccionada
+    } else if (gameMode === "no-impostor") {
+      shuffledNames.forEach(() => roles.push(palabraSeleccionada))
     } else {
-      const impostorIndex = Math.floor(Math.random() * shuffledNames.length)
-      gamePlayers = shuffledNames.map((name, index) => ({
-        name,
-        role: index === impostorIndex ? "Impostor" : palabraSeleccionada,
-        revealed: false,
-      }))
+      shuffledNames.forEach(() => roles.push(palabraSeleccionada))
+      const impostorIndex = Math.floor(Math.random() * roles.length)
+      roles[impostorIndex] = "Impostor"
     }
+
+    const shuffledRoles = [...roles].sort(() => Math.random() - 0.5)
+    
+    const gamePlayers: Player[] = shuffledNames.map((name, index) => ({
+      name,
+      role: shuffledRoles[index],
+      revealed: false,
+    }))
 
     setCurrentMode(gameMode)
     setPlayers(gamePlayers)
