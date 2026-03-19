@@ -26,6 +26,8 @@ export default function ImpostorGame() {
   const [firstPlayer, setFirstPlayer] = useState<string>("")
   const [timers, setTimers] = useState<TimerState>({})
   const [mounted, setMounted] = useState(false)
+  const [crazyMode, setCrazyMode] = useState(false)
+  const [currentMode, setCurrentMode] = useState<"normal" | "all-impostors" | "one-innocent">("normal")
   const intervalRefs = useRef<{ [key: number]: NodeJS.Timeout }>({})
   const { resolvedTheme, setTheme, theme } = useTheme()
 
@@ -65,14 +67,38 @@ export default function ImpostorGame() {
 
     const palabraSeleccionada = palabrasJuego[Math.floor(Math.random() * palabrasJuego.length)]
     const shuffledNames = [...playerNames].sort(() => Math.random() - 0.5)
-    const impostorIndex = Math.floor(Math.random() * shuffledNames.length)
 
-    const gamePlayers: Player[] = shuffledNames.map((name, index) => ({
-      name,
-      role: index === impostorIndex ? "Impostor" : palabraSeleccionada,
-      revealed: false,
-    }))
+    let gameMode: "normal" | "all-impostors" | "one-innocent" = "normal"
+    
+    if (crazyMode && Math.random() < 0.2) {
+      gameMode = Math.random() < 0.5 ? "all-impostors" : "one-innocent"
+    }
 
+    let gamePlayers: Player[]
+
+    if (gameMode === "all-impostors") {
+      gamePlayers = shuffledNames.map((name) => ({
+        name,
+        role: "Impostor",
+        revealed: false,
+      }))
+    } else if (gameMode === "one-innocent") {
+      const innocentIndex = Math.floor(Math.random() * shuffledNames.length)
+      gamePlayers = shuffledNames.map((name, index) => ({
+        name,
+        role: index === innocentIndex ? palabraSeleccionada : "Impostor",
+        revealed: false,
+      }))
+    } else {
+      const impostorIndex = Math.floor(Math.random() * shuffledNames.length)
+      gamePlayers = shuffledNames.map((name, index) => ({
+        name,
+        role: index === impostorIndex ? "Impostor" : palabraSeleccionada,
+        revealed: false,
+      }))
+    }
+
+    setCurrentMode(gameMode)
     setPlayers(gamePlayers)
     setFirstPlayer(pickFirstPlayer(shuffledNames, firstPlayer))
     setStage("playing")
@@ -123,6 +149,7 @@ export default function ImpostorGame() {
     setPlayers([])
     setInputName("")
     setFirstPlayer("")
+    setCurrentMode("normal")
   }
 
   const newRound = () => {
@@ -134,14 +161,38 @@ export default function ImpostorGame() {
 
     const palabraSeleccionada = palabrasJuego[Math.floor(Math.random() * palabrasJuego.length)]
     const shuffledNames = [...playerNames].sort(() => Math.random() - 0.5)
-    const impostorIndex = Math.floor(Math.random() * shuffledNames.length)
 
-    const gamePlayers: Player[] = shuffledNames.map((name, index) => ({
-      name,
-      role: index === impostorIndex ? "Impostor" : palabraSeleccionada,
-      revealed: false,
-    }))
+    let gameMode: "normal" | "all-impostors" | "one-innocent" = "normal"
+    
+    if (crazyMode && Math.random() < 0.2) {
+      gameMode = Math.random() < 0.5 ? "all-impostors" : "one-innocent"
+    }
 
+    let gamePlayers: Player[]
+
+    if (gameMode === "all-impostors") {
+      gamePlayers = shuffledNames.map((name) => ({
+        name,
+        role: "Impostor",
+        revealed: false,
+      }))
+    } else if (gameMode === "one-innocent") {
+      const innocentIndex = Math.floor(Math.random() * shuffledNames.length)
+      gamePlayers = shuffledNames.map((name, index) => ({
+        name,
+        role: index === innocentIndex ? palabraSeleccionada : "Impostor",
+        revealed: false,
+      }))
+    } else {
+      const impostorIndex = Math.floor(Math.random() * shuffledNames.length)
+      gamePlayers = shuffledNames.map((name, index) => ({
+        name,
+        role: index === impostorIndex ? "Impostor" : palabraSeleccionada,
+        revealed: false,
+      }))
+    }
+
+    setCurrentMode(gameMode)
     setPlayers(gamePlayers)
     setFirstPlayer(pickFirstPlayer(shuffledNames, firstPlayer))
   }
@@ -264,6 +315,28 @@ export default function ImpostorGame() {
                     </div>
                   </div>
                 )}
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={crazyMode}
+                    onClick={() => setCrazyMode(!crazyMode)}
+                    className={`relative h-6 w-11 rounded-full transition-colors ${
+                      crazyMode ? "bg-amber-500" : "bg-muted"
+                    }`}
+                  >
+                    <span
+                      className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                        crazyMode ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-foreground">Modo Loco</span>
+                    <span className="text-xs text-muted-foreground">20% de sorpresas especiales</span>
+                  </div>
+                </div>
 
                 {playerNames.length >= 3 && (
                   <Button
