@@ -169,34 +169,43 @@ Si el juego crece:
 - selectores estables mínimos con `data-testid` solo donde aportan valor (`first-player-name`, `player-card-*`, `player-role`, `player-timer`).
 
 ### Alcance cubierto en esta ronda
-El spec happy path actual cubre un flujo representativo de extremo a extremo:
-- abrir home
-- añadir 3 jugadores
-- empezar partida
-- comprobar que existe un primer jugador válido
-- revelar una carta y validar que muestra un rol real (`IMPOSTOR` o una palabra del catálogo)
-- verificar el countdown visible inicial de `5s`
-- adelantar el reloj y comprobar auto-hide real de la carta
-- lanzar `Nueva Ronda` y comprobar que el flujo sigue operativo
-- usar `Cambiar Jugadores` y validar vuelta al setup limpio
+La cobertura e2e actual sigue siendo pequeña, pero ya cubre tres recorridos con buen ROI:
+- `happy path` completo:
+  - abrir home
+  - añadir 3 jugadores
+  - empezar partida
+  - comprobar que existe un primer jugador válido
+  - revelar una carta y validar que muestra un rol real (`IMPOSTOR` o una palabra del catálogo)
+  - verificar el countdown visible inicial de `5s`
+  - adelantar el reloj y comprobar auto-hide real de la carta
+  - lanzar `Nueva Ronda` y comprobar que el flujo sigue operativo
+  - usar `Cambiar Jugadores` y validar vuelta al setup limpio
+- reshuffle explícito del primer jugador:
+  - arrancar partida
+  - pulsar `Cambiar` en el panel de primer jugador
+  - comprobar que el nombre sigue siendo válido y no reutiliza el actual
+- `crazyMode` determinista:
+  - activar el modo loco desde setup
+  - fijar `Math.random` justo antes de iniciar la ronda para forzar un caso estable de `all-impostors`
+  - revelar todas las cartas y comprobar que todas muestran `IMPOSTOR`
+  - verificar además que el reveal timer visible sigue funcionando y hace auto-hide
 
 ### Limitaciones actuales
-- solo hay un happy path; no cubre errores de setup, duplicados ni modo crazy.
-- la validación e2e depende de que el host tenga instaladas las dependencias de navegador de Playwright.
-- en este entorno actual faltan libs del sistema para Chromium, así que `pnpm test:e2e` queda bloqueado a nivel host aunque el spec/config ya están montados.
+- no se cubre setup inválido vía UI porque hoy sigue apoyándose en `alert`; se deja como pendiente hasta tener feedback inline/toast o una forma más limpia de interceptarlo sin volver el spec tosco.
+- no se cubren duplicados de nombres ni trims finos en e2e; ese valor ya está mejor cubierto en hooks/unit por ahora.
+- `crazyMode` solo verifica de forma robusta un subtipo (`all-impostors`); no merece la pena multiplicar specs para `one-innocent` o `no-impostor` mientras no cambie la UX.
 - no se añadieron snapshots ni pruebas visuales a propósito; para esta app pequeña hoy aportan poco frente al coste de mantenimiento.
 
 ### Siguientes ampliaciones recomendadas
-1. añadir un spec corto para `crazyMode` validando que la ronda arranca y la UI sigue siendo jugable.
-2. cubrir un caso de setup inválido visible en UI si en el futuro se reemplaza `alert` por feedback inline/toast.
-3. comprobar explícitamente el reshuffle del primer jugador desde el botón `Cambiar`.
-4. si aparecen más flujos, crear helpers/page objects muy pequeños; todavía no compensa abstraer más.
+1. cubrir setup inválido visible en UI si en el futuro se reemplaza `alert` por feedback inline/toast.
+2. si aparecen más reglas o modos visibles, exponer una pista mínima en UI y ampliar `crazyMode` con aserciones de producto, no de implementación.
+3. si el spec crece algo más, extraer helpers/page objects muy pequeños; todavía no compensa abstraer más.
 
 ## Validación ejecutada
 - `pnpm test` ✅
 - `pnpm exec tsc --noEmit` ✅
 - `pnpm build` ✅
-- `pnpm test:e2e` ⚠️ bloqueado por dependencias de sistema de Playwright/Chromium ausentes en el host (`playwright install-deps` no disponible desde este runtime)
+- `pnpm test:e2e` ✅
 
 ## Cierre de etapa: refactor estructural
 La ronda de refactor estructural puede darse por cerrada aquí.
