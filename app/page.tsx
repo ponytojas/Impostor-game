@@ -6,20 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Shuffle, Plus, X, Play, Moon, Sun } from "lucide-react"
-import { palabrasJuego } from "@/lib/words"
-
-type Player = {
-  name: string
-  role: string // La palabra o "Impostor"
-  revealed: boolean
-}
-
-type TimerState = {
-  [key: number]: number
-}
+import {
+  IMPOSTOR_ROLE,
+  MIN_PLAYERS,
+  REVEAL_DURATION_SECONDS,
+} from "@/domain/game/constants"
+import { createGameRound, pickFirstPlayer } from "@/domain/game/engine"
+import type { GameStage, GameMode, Player, TimerState } from "@/domain/game/types"
 
 export default function ImpostorGame() {
-  const [stage, setStage] = useState<"setup" | "playing">("setup")
+  const [stage, setStage] = useState<GameStage>("setup")
   const [inputName, setInputName] = useState("")
   const [playerNames, setPlayerNames] = useState<string[]>([])
   const [players, setPlayers] = useState<Player[]>([])
@@ -27,7 +23,7 @@ export default function ImpostorGame() {
   const [timers, setTimers] = useState<TimerState>({})
   const [mounted, setMounted] = useState(false)
   const [crazyMode, setCrazyMode] = useState(false)
-  const [currentMode, setCurrentMode] = useState<"normal" | "all-impostors" | "one-innocent" | "no-impostor">("normal")
+  const [currentMode, setCurrentMode] = useState<GameMode>("normal")
   const intervalRefs = useRef<{ [key: number]: NodeJS.Timeout }>({})
   const { resolvedTheme, setTheme, theme } = useTheme()
 
@@ -52,56 +48,17 @@ export default function ImpostorGame() {
     setPlayerNames(playerNames.filter((n) => n !== name))
   }
 
-  const pickFirstPlayer = (names: string[], current?: string) => {
-    if (names.length === 0) return ""
-    if (names.length === 1) return names[0]
-    const options = current ? names.filter((name) => name !== current) : names
-    return options[Math.floor(Math.random() * options.length)]
-  }
-
   const startGame = () => {
-    if (playerNames.length < 3) {
-      alert("Necesitas al menos 3 jugadores para jugar")
+    if (playerNames.length < MIN_PLAYERS) {
+      alert(`Necesitas al menos ${MIN_PLAYERS} jugadores para jugar`)
       return
     }
 
-    const palabraSeleccionada = palabrasJuego[Math.floor(Math.random() * palabrasJuego.length)]
-    const shuffledNames = [...playerNames].sort(() => Math.random() - 0.5)
+    const round = createGameRound(playerNames, crazyMode, firstPlayer)
 
-    let gameMode: "normal" | "all-impostors" | "one-innocent" | "no-impostor" = "normal"
-    
-    if (crazyMode && Math.random() < 0.2) {
-      const crazyModes: ("all-impostors" | "one-innocent" | "no-impostor")[] = ["all-impostors", "one-innocent", "no-impostor"]
-      gameMode = crazyModes[Math.floor(Math.random() * crazyModes.length)]
-    }
-
-    const roles: string[] = []
-    
-    if (gameMode === "all-impostors") {
-      shuffledNames.forEach(() => roles.push("Impostor"))
-    } else if (gameMode === "one-innocent") {
-      shuffledNames.forEach(() => roles.push("Impostor"))
-      const innocentIndex = Math.floor(Math.random() * roles.length)
-      roles[innocentIndex] = palabraSeleccionada
-    } else if (gameMode === "no-impostor") {
-      shuffledNames.forEach(() => roles.push(palabraSeleccionada))
-    } else {
-      shuffledNames.forEach(() => roles.push(palabraSeleccionada))
-      const impostorIndex = Math.floor(Math.random() * roles.length)
-      roles[impostorIndex] = "Impostor"
-    }
-
-    const shuffledRoles = [...roles].sort(() => Math.random() - 0.5)
-    
-    const gamePlayers: Player[] = shuffledNames.map((name, index) => ({
-      name,
-      role: shuffledRoles[index],
-      revealed: false,
-    }))
-
-    setCurrentMode(gameMode)
-    setPlayers(gamePlayers)
-    setFirstPlayer(pickFirstPlayer(shuffledNames, firstPlayer))
+    setCurrentMode(round.mode)
+    setPlayers(round.players)
+    setFirstPlayer(round.firstPlayer)
     setStage("playing")
   }
 
@@ -112,7 +69,7 @@ export default function ImpostorGame() {
     setPlayers(newPlayers)
 
     if (isRevealing) {
-      setTimers((prev) => ({ ...prev, [index]: 5 }))
+      setTimers((prev) => ({ ...prev, [index]: REVEAL_DURATION_SECONDS }))
 
       intervalRefs.current[index] = setInterval(() => {
         setTimers((prev) => {
@@ -154,49 +111,17 @@ export default function ImpostorGame() {
   }
 
   const newRound = () => {
-    if (playerNames.length < 3) return
+    if (playerNames.length < MIN_PLAYERS) return
 
     Object.values(intervalRefs.current).forEach(clearInterval)
     intervalRefs.current = {}
     setTimers({})
 
-    const palabraSeleccionada = palabrasJuego[Math.floor(Math.random() * palabrasJuego.length)]
-    const shuffledNames = [...playerNames].sort(() => Math.random() - 0.5)
+    const round = createGameRound(playerNames, crazyMode, firstPlayer)
 
-    let gameMode: "normal" | "all-impostors" | "one-innocent" | "no-impostor" = "normal"
-    
-    if (crazyMode && Math.random() < 0.2) {
-      const crazyModes: ("all-impostors" | "one-innocent" | "no-impostor")[] = ["all-impostors", "one-innocent", "no-impostor"]
-      gameMode = crazyModes[Math.floor(Math.random() * crazyModes.length)]
-    }
-
-    const roles: string[] = []
-    
-    if (gameMode === "all-impostors") {
-      shuffledNames.forEach(() => roles.push("Impostor"))
-    } else if (gameMode === "one-innocent") {
-      shuffledNames.forEach(() => roles.push("Impostor"))
-      const innocentIndex = Math.floor(Math.random() * roles.length)
-      roles[innocentIndex] = palabraSeleccionada
-    } else if (gameMode === "no-impostor") {
-      shuffledNames.forEach(() => roles.push(palabraSeleccionada))
-    } else {
-      shuffledNames.forEach(() => roles.push(palabraSeleccionada))
-      const impostorIndex = Math.floor(Math.random() * roles.length)
-      roles[impostorIndex] = "Impostor"
-    }
-
-    const shuffledRoles = [...roles].sort(() => Math.random() - 0.5)
-    
-    const gamePlayers: Player[] = shuffledNames.map((name, index) => ({
-      name,
-      role: shuffledRoles[index],
-      revealed: false,
-    }))
-
-    setCurrentMode(gameMode)
-    setPlayers(gamePlayers)
-    setFirstPlayer(pickFirstPlayer(shuffledNames, firstPlayer))
+    setCurrentMode(round.mode)
+    setPlayers(round.players)
+    setFirstPlayer(round.firstPlayer)
   }
 
   const shuffleFirstPlayer = () => {
@@ -431,14 +356,14 @@ export default function ImpostorGame() {
               style={{ animationDelay: `${index * 60}ms` }}
               className={`group relative flex h-56 flex-col items-center justify-center gap-3 rounded-3xl border px-6 py-8 text-center shadow-sm transition-all duration-300 motion-reduce:animate-none sm:h-60 lg:h-64 ${!player.revealed
                 ? "border-border bg-card/90 text-foreground shadow-[0_20px_50px_-35px_rgba(15,23,42,0.35)] hover:-translate-y-1 hover:border-foreground/20 hover:shadow-[0_28px_60px_-35px_rgba(15,23,42,0.45)] active:translate-y-0"
-                : player.role === "Impostor"
+                : player.role === IMPOSTOR_ROLE
                   ? "border-rose-200 bg-rose-50 text-rose-950 shadow-[0_20px_50px_-35px_rgba(127,29,29,0.25)] dark:border-rose-500/40 dark:bg-rose-500/20 dark:text-rose-100 dark:shadow-[0_20px_50px_-35px_rgba(244,63,94,0.35)]"
                   : "border-emerald-200 bg-emerald-50 text-emerald-950 shadow-[0_20px_50px_-35px_rgba(6,78,59,0.2)] dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-100 dark:shadow-[0_20px_50px_-35px_rgba(16,185,129,0.35)]"
                 } animate-[fade-up_600ms_ease-out_forwards]`}
             >
               {player.revealed && timers[index] !== undefined && (
                 <div
-                  className={`absolute right-4 top-4 rounded-full border px-3 py-1 text-xs font-medium ${player.role === "Impostor"
+                  className={`absolute right-4 top-4 rounded-full border px-3 py-1 text-xs font-medium ${player.role === IMPOSTOR_ROLE
                     ? "border-rose-200 bg-rose-100/80 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-100"
                     : "border-emerald-200 bg-emerald-100/80 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-100"
                     }`}
@@ -459,19 +384,19 @@ export default function ImpostorGame() {
               ) : (
                 <>
                   <span
-                    className={`text-xs uppercase tracking-[0.35em] ${player.role === "Impostor" ? "text-rose-500 dark:text-rose-300" : "text-emerald-600 dark:text-emerald-300"
+                    className={`text-xs uppercase tracking-[0.35em] ${player.role === IMPOSTOR_ROLE ? "text-rose-500 dark:text-rose-300" : "text-emerald-600 dark:text-emerald-300"
                       }`}
                   >
                     Tu rol
                   </span>
                   <h3 className="text-2xl font-semibold">{player.name}</h3>
                   <div
-                    className={`rounded-2xl border px-6 py-3 text-center text-2xl font-semibold tracking-wide ${player.role === "Impostor"
+                    className={`rounded-2xl border px-6 py-3 text-center text-2xl font-semibold tracking-wide ${player.role === IMPOSTOR_ROLE
                       ? "border-rose-200 bg-rose-100/70 text-rose-900 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-100"
                       : "border-emerald-200 bg-emerald-100/70 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-100"
                       }`}
                   >
-                    {player.role === "Impostor" ? "IMPOSTOR" : player.role}
+                    {player.role === IMPOSTOR_ROLE ? "IMPOSTOR" : player.role}
                   </div>
                   <span className="text-xs text-muted-foreground">Toca para ocultar</span>
                 </>
