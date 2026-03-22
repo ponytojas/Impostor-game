@@ -120,25 +120,37 @@ Si el juego crece:
 ### Fase 6 — Calidad y pruebas
 
 #### Stack elegido
-- `Vitest` como runner principal por ser la opción más ligera y estándar para TypeScript/Next en tests unitarios puros.
-- entorno `node` para no meter `jsdom` ni Testing Library antes de necesitarlos de verdad.
-- `vitest.config.ts` mínimo con alias `@` y foco inicial en `domain/**/*.test.ts`.
+- `Vitest` como runner principal.
+- `@testing-library/react` solo para `renderHook`, sin montar UI compleja.
+- `jsdom` únicamente en los tests de hooks mediante `// @vitest-environment jsdom`.
+- fake timers de Vitest para cubrir comportamiento temporal sin fragilidad visual.
+- `vitest.config.ts` sigue mínimo: alias `@` y scope ampliado a `domain/**/*.test.ts` + `hooks/**/*.test.ts`.
 
 #### Alcance cubierto en esta ronda
-- `domain/game/engine.ts` cubierto con 11 tests unitarios.
-- casos cubiertos:
-  - selección aleatoria controlada (`pickRandomItem`)
-  - shuffle sin mutación del array original (`shuffleArray`)
-  - elección de primer jugador evitando repetir cuando aplica (`pickFirstPlayer`)
-  - resolución de modos normales/crazy (`resolveGameMode`)
-  - asignación de roles en `normal`, `one-innocent`, `no-impostor` y `all-impostors` (`buildRoles`)
-  - integración base de creación de ronda (`createGameRound`)
-- para hacer los tests deterministas se reemplazó el `sort(() => Math.random() - 0.5)` por un Fisher-Yates simple e inyectable con `random` opcional. Mantiene el comportamiento del juego y mejora la testabilidad.
+- `domain/game/engine.ts` sigue cubierto con 11 tests unitarios.
+- se añadieron 6 tests de integración pragmáticos sobre hooks:
+  - `hooks/use-reveal-timers.test.ts`
+    - reveal manual + countdown + auto-hide al expirar
+    - cierre manual de una carta limpiando su timer
+    - `clearAllTimers` reseteando el estado temporal para preparar nueva ronda
+  - `hooks/use-impostor-game.test.ts`
+    - bloqueo de setup inválido con callback `onInvalidSetup`
+    - arranque de partida propagando estado de ronda (`stage`, `players`, `firstPlayer`, `currentMode`)
+    - `shuffleFirstPlayer`, `newRound` y `resetGame` en un corte pequeño pero valioso
+- enfoque deliberado: probar lógica compuesta y coordinación entre estado + temporizadores, no componentes visuales.
+- para hacer los tests del motor deterministas se reemplazó el `sort(() => Math.random() - 0.5)` por un Fisher-Yates simple e inyectable con `random` opcional. Mantiene el comportamiento del juego y mejora la testabilidad.
 
-#### Huecos pendientes
-- `hooks/use-impostor-game.ts`: aún sin tests; puede cubrirse más adelante con `@testing-library/react` cuando compense añadir `jsdom`.
-- `hooks/use-reveal-timers.ts`: requiere tests temporales con fake timers; buen siguiente paso si queremos blindar reveals.
-- sin smoke tests de UI todavía; deliberado para evitar sobreinfraestructura en esta primera ronda.
+#### Qué NO se cubrió aún
+- no hay tests de componentes (`SetupScreen`, `PlayingScreen`, `PlayerCard`, etc.).
+- no se cubrieron interacciones de DOM reales ni accesibilidad visual.
+- `useImpostorGame` no está cubierto de forma exhaustiva: faltan duplicados, trims más finos, combinación completa con `crazyMode` real y asserts más profundos sobre integración con engine no mockeado.
+- `clearAllTimers` no resetea cartas reveladas; hoy el test documenta el comportamiento actual en vez de imponer otro.
+
+#### Qué quedaría para Playwright
+- flujo completo happy path desde la home: añadir jugadores, empezar partida, revelar cartas y verificar auto-hide visible en UI.
+- persistencia/flujo visible del primer jugador y botón de nueva ronda.
+- smoke e2e del modo crazy desde la interfaz.
+- regresiones visuales/UX ligeras: alternancia setup/playing, reset de partida y controles principales operativos.
 
 ## Riesgos actuales
 - `setup-screen.tsx` ya quedó en una composición razonable (hero + shell + CTA); seguir troceándolo ahora tendría retorno bajo y más riesgo de ruido que beneficio.
