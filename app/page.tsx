@@ -1,134 +1,42 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
 import { Shuffle, Plus, X, Play, Moon, Sun } from "lucide-react"
-import {
-  IMPOSTOR_ROLE,
-  MIN_PLAYERS,
-  REVEAL_DURATION_SECONDS,
-} from "@/domain/game/constants"
-import { createGameRound, pickFirstPlayer } from "@/domain/game/engine"
-import type { GameStage, GameMode, Player, TimerState } from "@/domain/game/types"
+
+import { IMPOSTOR_ROLE } from "@/domain/game/constants"
+import { useImpostorGame } from "@/hooks/use-impostor-game"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 
 export default function ImpostorGame() {
-  const [stage, setStage] = useState<GameStage>("setup")
-  const [inputName, setInputName] = useState("")
-  const [playerNames, setPlayerNames] = useState<string[]>([])
-  const [players, setPlayers] = useState<Player[]>([])
-  const [firstPlayer, setFirstPlayer] = useState<string>("")
-  const [timers, setTimers] = useState<TimerState>({})
   const [mounted, setMounted] = useState(false)
-  const [crazyMode, setCrazyMode] = useState(false)
-  const [currentMode, setCurrentMode] = useState<GameMode>("normal")
-  const intervalRefs = useRef<{ [key: number]: NodeJS.Timeout }>({})
   const { resolvedTheme, setTheme, theme } = useTheme()
+  const {
+    stage,
+    inputName,
+    playerNames,
+    players,
+    firstPlayer,
+    timers,
+    crazyMode,
+    setInputName,
+    setCrazyMode,
+    addPlayer,
+    removePlayer,
+    startGame,
+    toggleCard,
+    resetGame,
+    newRound,
+    shuffleFirstPlayer,
+  } = useImpostorGame({
+    onInvalidSetup: (message) => alert(message),
+  })
 
   useEffect(() => {
     setMounted(true)
   }, [])
-
-  useEffect(() => {
-    return () => {
-      Object.values(intervalRefs.current).forEach(clearInterval)
-    }
-  }, [])
-
-  const addPlayer = () => {
-    if (inputName.trim() && !playerNames.includes(inputName.trim())) {
-      setPlayerNames([...playerNames, inputName.trim()])
-      setInputName("")
-    }
-  }
-
-  const removePlayer = (name: string) => {
-    setPlayerNames(playerNames.filter((n) => n !== name))
-  }
-
-  const startGame = () => {
-    if (playerNames.length < MIN_PLAYERS) {
-      alert(`Necesitas al menos ${MIN_PLAYERS} jugadores para jugar`)
-      return
-    }
-
-    const round = createGameRound(playerNames, crazyMode, firstPlayer)
-
-    setCurrentMode(round.mode)
-    setPlayers(round.players)
-    setFirstPlayer(round.firstPlayer)
-    setStage("playing")
-  }
-
-  const toggleCard = (index: number) => {
-    const newPlayers = [...players]
-    const isRevealing = !newPlayers[index].revealed
-    newPlayers[index].revealed = isRevealing
-    setPlayers(newPlayers)
-
-    if (isRevealing) {
-      setTimers((prev) => ({ ...prev, [index]: REVEAL_DURATION_SECONDS }))
-
-      intervalRefs.current[index] = setInterval(() => {
-        setTimers((prev) => {
-          const newTime = (prev[index] || 0) - 1
-          if (newTime <= 0) {
-            clearInterval(intervalRefs.current[index])
-            setPlayers((currentPlayers) => {
-              const updated = [...currentPlayers]
-              updated[index].revealed = false
-              return updated
-            })
-            const { [index]: _, ...rest } = prev
-            return rest
-          }
-          return { ...prev, [index]: newTime }
-        })
-      }, 1000)
-    } else {
-      if (intervalRefs.current[index]) {
-        clearInterval(intervalRefs.current[index])
-      }
-      setTimers((prev) => {
-        const { [index]: _, ...rest } = prev
-        return rest
-      })
-    }
-  }
-
-  const resetGame = () => {
-    Object.values(intervalRefs.current).forEach(clearInterval)
-    intervalRefs.current = {}
-    setTimers({})
-    setStage("setup")
-    setPlayerNames([])
-    setPlayers([])
-    setInputName("")
-    setFirstPlayer("")
-    setCurrentMode("normal")
-  }
-
-  const newRound = () => {
-    if (playerNames.length < MIN_PLAYERS) return
-
-    Object.values(intervalRefs.current).forEach(clearInterval)
-    intervalRefs.current = {}
-    setTimers({})
-
-    const round = createGameRound(playerNames, crazyMode, firstPlayer)
-
-    setCurrentMode(round.mode)
-    setPlayers(round.players)
-    setFirstPlayer(round.firstPlayer)
-  }
-
-  const shuffleFirstPlayer = () => {
-    const names = players.length ? players.map((player) => player.name) : playerNames
-    if (!names.length) return
-    setFirstPlayer(pickFirstPlayer(names, firstPlayer))
-  }
 
   const isDark = mounted ? resolvedTheme === "dark" : false
   const toggleTheme = () => setTheme(isDark ? "light" : "dark")
@@ -201,8 +109,8 @@ export default function ImpostorGame() {
                       type="text"
                       placeholder="Nombre del jugador"
                       value={inputName}
-                      onChange={(e) => setInputName(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && addPlayer()}
+                      onChange={(event) => setInputName(event.target.value)}
+                      onKeyDown={(event) => event.key === "Enter" && addPlayer()}
                       className="h-12 rounded-full border-border bg-background px-5 text-base text-foreground placeholder:text-muted-foreground focus-visible:ring-ring/40"
                     />
                     <Button
@@ -310,14 +218,13 @@ export default function ImpostorGame() {
           <div className="space-y-3">
             <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Primer jugador</p>
             <div className="flex items-center gap-3">
-              <div className="flex flex-row gap-4 items-center align-middle">
-
+              <div className="flex flex-row items-center gap-4 align-middle">
                 <Button
                   onClick={shuffleFirstPlayer}
                   variant="outline"
                   size="icon"
                   aria-label="Cambiar primer jugador"
-                  className="mt-1 h-8 w-auto px-5 rounded-full border-border bg-background text-foreground hover:bg-accent"
+                  className="mt-1 h-8 w-auto rounded-full border-border bg-background px-5 text-foreground hover:bg-accent"
                 >
                   <Shuffle className="h-4 w-4" />
                   Cambiar
@@ -354,19 +261,21 @@ export default function ImpostorGame() {
               key={`${player.name}-${index}`}
               onClick={() => toggleCard(index)}
               style={{ animationDelay: `${index * 60}ms` }}
-              className={`group relative flex h-56 flex-col items-center justify-center gap-3 rounded-3xl border px-6 py-8 text-center shadow-sm transition-all duration-300 motion-reduce:animate-none sm:h-60 lg:h-64 ${!player.revealed
-                ? "border-border bg-card/90 text-foreground shadow-[0_20px_50px_-35px_rgba(15,23,42,0.35)] hover:-translate-y-1 hover:border-foreground/20 hover:shadow-[0_28px_60px_-35px_rgba(15,23,42,0.45)] active:translate-y-0"
-                : player.role === IMPOSTOR_ROLE
-                  ? "border-rose-200 bg-rose-50 text-rose-950 shadow-[0_20px_50px_-35px_rgba(127,29,29,0.25)] dark:border-rose-500/40 dark:bg-rose-500/20 dark:text-rose-100 dark:shadow-[0_20px_50px_-35px_rgba(244,63,94,0.35)]"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-950 shadow-[0_20px_50px_-35px_rgba(6,78,59,0.2)] dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-100 dark:shadow-[0_20px_50px_-35px_rgba(16,185,129,0.35)]"
-                } animate-[fade-up_600ms_ease-out_forwards]`}
+              className={`group relative flex h-56 animate-[fade-up_600ms_ease-out_forwards] flex-col items-center justify-center gap-3 rounded-3xl border px-6 py-8 text-center shadow-sm transition-all duration-300 motion-reduce:animate-none sm:h-60 lg:h-64 ${
+                !player.revealed
+                  ? "border-border bg-card/90 text-foreground shadow-[0_20px_50px_-35px_rgba(15,23,42,0.35)] hover:-translate-y-1 hover:border-foreground/20 hover:shadow-[0_28px_60px_-35px_rgba(15,23,42,0.45)] active:translate-y-0"
+                  : player.role === IMPOSTOR_ROLE
+                    ? "border-rose-200 bg-rose-50 text-rose-950 shadow-[0_20px_50px_-35px_rgba(127,29,29,0.25)] dark:border-rose-500/40 dark:bg-rose-500/20 dark:text-rose-100 dark:shadow-[0_20px_50px_-35px_rgba(244,63,94,0.35)]"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-950 shadow-[0_20px_50px_-35px_rgba(6,78,59,0.2)] dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-100 dark:shadow-[0_20px_50px_-35px_rgba(16,185,129,0.35)]"
+              }`}
             >
               {player.revealed && timers[index] !== undefined && (
                 <div
-                  className={`absolute right-4 top-4 rounded-full border px-3 py-1 text-xs font-medium ${player.role === IMPOSTOR_ROLE
-                    ? "border-rose-200 bg-rose-100/80 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-100"
-                    : "border-emerald-200 bg-emerald-100/80 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-100"
-                    }`}
+                  className={`absolute right-4 top-4 rounded-full border px-3 py-1 text-xs font-medium ${
+                    player.role === IMPOSTOR_ROLE
+                      ? "border-rose-200 bg-rose-100/80 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-100"
+                      : "border-emerald-200 bg-emerald-100/80 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-100"
+                  }`}
                 >
                   {timers[index]}s
                 </div>
@@ -384,17 +293,21 @@ export default function ImpostorGame() {
               ) : (
                 <>
                   <span
-                    className={`text-xs uppercase tracking-[0.35em] ${player.role === IMPOSTOR_ROLE ? "text-rose-500 dark:text-rose-300" : "text-emerald-600 dark:text-emerald-300"
-                      }`}
+                    className={`text-xs uppercase tracking-[0.35em] ${
+                      player.role === IMPOSTOR_ROLE
+                        ? "text-rose-500 dark:text-rose-300"
+                        : "text-emerald-600 dark:text-emerald-300"
+                    }`}
                   >
                     Tu rol
                   </span>
                   <h3 className="text-2xl font-semibold">{player.name}</h3>
                   <div
-                    className={`rounded-2xl border px-6 py-3 text-center text-2xl font-semibold tracking-wide ${player.role === IMPOSTOR_ROLE
-                      ? "border-rose-200 bg-rose-100/70 text-rose-900 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-100"
-                      : "border-emerald-200 bg-emerald-100/70 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-100"
-                      }`}
+                    className={`rounded-2xl border px-6 py-3 text-center text-2xl font-semibold tracking-wide ${
+                      player.role === IMPOSTOR_ROLE
+                        ? "border-rose-200 bg-rose-100/70 text-rose-900 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-100"
+                        : "border-emerald-200 bg-emerald-100/70 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-100"
+                    }`}
                   >
                     {player.role === IMPOSTOR_ROLE ? "IMPOSTOR" : player.role}
                   </div>

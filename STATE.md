@@ -70,30 +70,27 @@ Eventos esperados:
 ### Fase 2 — Capa de estado del juego
 Objetivo: sacar el flujo principal de `app/page.tsx`.
 
-Propuesta:
-- crear `state/game/useImpostorGame.ts`
-- centralizar:
-  - `stage`
-  - `playerNames`
-  - `players`
-  - `firstPlayer`
-  - `crazyMode`
-  - acciones `addPlayer`, `removePlayer`, `startGame`, `newRound`, `resetGame`
+Estado:
+- [x] creado `hooks/use-impostor-game.ts`
+- [x] centralizados `stage`, `inputName`, `playerNames`, `players`, `firstPlayer`, `crazyMode`, `currentMode`
+- [x] movidas las acciones `addPlayer`, `removePlayer`, `startGame`, `newRound`, `resetGame`, `shuffleFirstPlayer`
+- [x] mantenido `alert` como detalle de UI vía callback `onInvalidSetup`
 
-Resultado esperado:
-- la página pasa a ser composición/presentación
-- mejor testabilidad del flujo
+Resultado actual:
+- la página ya actúa más como composición/presentación
+- el flujo de ronda queda encapsulado y es más fácil de testear/iterar
 
 ### Fase 3 — Temporizadores/reveal state
 Objetivo: separar el comportamiento temporal del dominio principal.
 
-Propuesta:
-- crear `state/game/useRevealTimers.ts`
-- encapsular `timers`, `intervalRefs`, limpieza y `toggleCard`
+Estado:
+- [x] creado `hooks/use-reveal-timers.ts`
+- [x] encapsulados `timers`, `intervalRefs`, limpieza y `toggleCard`
+- [x] limpieza automática de intervals al desmontar o resetear/nueva ronda
 
-Resultado esperado:
-- menos efectos laterales en la pantalla
-- menor riesgo al tocar UX de reveal
+Resultado actual:
+- menos efectos laterales en la página
+- corte pequeño y seguro: no cambia la UX visible, solo mueve la mecánica temporal
 
 ### Fase 4 — Componentización UI
 Extraer desde `app/page.tsx`:
@@ -119,13 +116,17 @@ Si el juego crece:
 - smoke test UI mínimo
 
 ## Riesgos actuales
-- No se ha validado build localmente porque faltan dependencias instaladas (`next` no está disponible en este checkout).
-- `app/page.tsx` sigue siendo el mayor hotspot; este cambio reduce riesgo pero no elimina el acoplamiento de estado/temporizadores.
+- `app/page.tsx` sigue siendo grande porque conserva casi toda la presentación; el siguiente corte natural es componentizar `setup` y `playing` sin volver a mezclar lógica.
 - La aleatoriedad usa `Math.random()` y `sort(() => Math.random() - 0.5)`, suficiente para este juego casual pero no ideal si luego queremos test reproducible.
-- `currentMode` se mantiene en estado pero aún no está reflejado en UI; es correcto funcionalmente, pero puede convertirse en deuda si se olvida.
+- `currentMode` se mantiene en estado pero aún no está reflejado en UI; hoy no rompe nada, pero sigue siendo deuda si la app quiere exponer modos especiales.
+- `useRevealTimers` depende del índice del jugador para los timers; es consistente con la UI actual, pero si en el futuro hay reordenaciones dinámicas convendría migrar a una clave estable.
+
+## Validación ejecutada
+- `pnpm build` ✅
+- `pnpm exec tsc --noEmit` ✅
 
 ## Siguientes pasos recomendados
-1. Crear `useImpostorGame` para sacar las acciones principales de la página.
-2. Extraer `toggleCard` + temporizadores a `useRevealTimers`.
-3. Dividir la pantalla en `SetupScreen` y `PlayingScreen`.
-4. Instalar dependencias y validar con `npm install`/`pnpm install` + `build` antes de refactors mayores.
+1. Dividir `app/page.tsx` en componentes presentacionales (`SetupScreen`, `PlayingScreen`, quizá `PlayerCard`).
+2. Añadir tests unitarios para `domain/game/engine.ts` y smoke tests básicos para los hooks nuevos.
+3. Decidir si `currentMode` debe mostrarse en UI o eliminarse del estado hasta que haga falta explícitamente.
+4. Si se quiere más seguridad para reveal/timers, migrar de índice a identificador estable por jugador.
