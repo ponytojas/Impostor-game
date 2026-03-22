@@ -5,19 +5,20 @@
 Proyecto Next.js pequeño con App Router y una sola pantalla principal de juego.
 
 ### Estructura actual
-- `app/page.tsx` — pantalla principal y núcleo de la app.
+- `app/page.tsx` — composición mínima de la pantalla principal.
 - `app/layout.tsx` — layout global y providers.
+- `components/game/*` — **nuevo** corte presentacional de la UI del juego.
 - `components/ui/*` — primitives UI reutilizables (shadcn-style).
 - `lib/words.ts` — catálogo de palabras.
 - `lib/utils.ts` — utilidades genéricas mínimas.
-- `domain/game/*` — **nuevo** primer corte de dominio extraído en esta refactorización.
-- `scripts/agent-status-log.sh` — **nuevo** helper append-only para estado/log del agente.
+- `domain/game/*` — dominio del juego ya desacoplado de la pantalla.
+- `scripts/agent-status-log.sh` — helper append-only para estado/log del agente.
 
 ## Inventario de hotspots / acoplamiento
 
 ### Ficheros grandes
-- `app/page.tsx` (~505 líneas): concentra UI, estado local, reglas del juego, aleatoriedad, temporizadores, flujo de ronda y parte de la presentación.
-- `lib/words.ts` (~200 líneas): dataset estático razonable, pero hoy actúa como dependencia directa desde la pantalla.
+- `components/game/setup-screen.tsx` y `components/game/playing-screen.tsx`: concentran la mayor parte de la presentación, ya separada de la lógica.
+- `lib/words.ts` (~200 líneas): dataset estático razonable, pero hoy actúa como dependencia directa desde el motor de ronda.
 
 ### Zonas de acoplamiento detectadas
 1. **Dominio mezclado con UI en `app/page.tsx`**
@@ -93,16 +94,17 @@ Resultado actual:
 - corte pequeño y seguro: no cambia la UX visible, solo mueve la mecánica temporal
 
 ### Fase 4 — Componentización UI
-Extraer desde `app/page.tsx`:
-- `components/game/setup-screen.tsx`
-- `components/game/playing-screen.tsx`
-- `components/game/player-card.tsx`
-- `components/game/theme-toggle.tsx`
-- `components/game/first-player-panel.tsx`
+Estado:
+- [x] extraído `components/game/setup-screen.tsx`
+- [x] extraído `components/game/playing-screen.tsx`
+- [x] extraído `components/game/player-card.tsx`
+- [x] extraído `components/game/theme-toggle.tsx`
+- [ ] valorar `first-player-panel.tsx` solo si el siguiente corte sigue siendo pequeño y seguro
 
-Criterio:
+Criterio aplicado:
 - componentes presentacionales primero
-- evitar meter lógica de negocio dentro de componentes nuevos
+- lógica de negocio mantenida en hooks/domain
+- sin cambios visuales intencionados; se han movido bloques JSX casi literales
 
 ### Fase 5 — Services y datos
 Si el juego crece:
@@ -116,7 +118,8 @@ Si el juego crece:
 - smoke test UI mínimo
 
 ## Riesgos actuales
-- `app/page.tsx` sigue siendo grande porque conserva casi toda la presentación; el siguiente corte natural es componentizar `setup` y `playing` sin volver a mezclar lógica.
+- La estructura ya está mejor separada, pero `setup-screen.tsx` sigue mezclando varias subsecciones visuales (hero, alta de jugadores, lista y toggle); el siguiente corte natural sería fragmentarlo solo si se hace sin tocar clases ni markup sensible.
+- `playing-screen.tsx` aún contiene el panel de primer jugador y el bloque de instrucciones; podrían salir a componentes pequeños, pero conviene hacerlo en cortes muy controlados.
 - La aleatoriedad usa `Math.random()` y `sort(() => Math.random() - 0.5)`, suficiente para este juego casual pero no ideal si luego queremos test reproducible.
 - `currentMode` se mantiene en estado pero aún no está reflejado en UI; hoy no rompe nada, pero sigue siendo deuda si la app quiere exponer modos especiales.
 - `useRevealTimers` depende del índice del jugador para los timers; es consistente con la UI actual, pero si en el futuro hay reordenaciones dinámicas convendría migrar a una clave estable.
@@ -126,7 +129,8 @@ Si el juego crece:
 - `pnpm exec tsc --noEmit` ✅
 
 ## Siguientes pasos recomendados
-1. Dividir `app/page.tsx` en componentes presentacionales (`SetupScreen`, `PlayingScreen`, quizá `PlayerCard`).
-2. Añadir tests unitarios para `domain/game/engine.ts` y smoke tests básicos para los hooks nuevos.
-3. Decidir si `currentMode` debe mostrarse en UI o eliminarse del estado hasta que haga falta explícitamente.
-4. Si se quiere más seguridad para reveal/timers, migrar de índice a identificador estable por jugador.
+1. Evaluar un corte pequeño adicional para `playing-screen.tsx`: extraer `first-player-panel` y/o `how-to-play-card` sin mover lógica.
+2. Revisar si merece la pena trocear `setup-screen.tsx` en piezas todavía más tontas (`players-input`, `players-list`) manteniendo el JSX prácticamente idéntico.
+3. Añadir tests unitarios para `domain/game/engine.ts` y smoke tests básicos para los hooks nuevos.
+4. Decidir si `currentMode` debe mostrarse en UI o eliminarse del estado hasta que haga falta explícitamente.
+5. Si se quiere más seguridad para reveal/timers, migrar de índice a identificador estable por jugador.
