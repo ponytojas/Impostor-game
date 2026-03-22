@@ -1,5 +1,7 @@
 import { Shuffle, X } from "lucide-react"
 
+import { FirstPlayerPanel } from "@/components/game/first-player-panel"
+import { HowToPlayCard } from "@/components/game/how-to-play-card"
 import { PlayerCard } from "@/components/game/player-card"
 import { ThemeToggle } from "@/components/game/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -53,26 +55,7 @@ export function PlayingScreen({
           />
         </header>
 
-        <div className="mt-8 grid gap-4 rounded-3xl border border-border bg-card/90 p-6 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.4)] backdrop-blur sm:grid-cols-[1.4fr_auto] sm:items-center sm:p-8">
-          <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Primer jugador</p>
-            <div className="flex items-center gap-3">
-              <div className="flex flex-row items-center gap-4 align-middle">
-                <Button
-                  onClick={onShuffleFirstPlayer}
-                  variant="outline"
-                  size="icon"
-                  aria-label="Cambiar primer jugador"
-                  className="mt-1 h-8 w-auto rounded-full border-border bg-background px-5 text-foreground hover:bg-accent"
-                >
-                  <Shuffle className="h-4 w-4" />
-                  Cambiar
-                </Button>
-                <p className="text-3xl font-semibold leading-tight sm:text-4xl">{firstPlayer || "Sin seleccionar"}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <FirstPlayerPanel firstPlayer={firstPlayer} onShuffle={onShuffleFirstPlayer} />
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Button
@@ -104,20 +87,7 @@ export function PlayingScreen({
           ))}
         </div>
 
-        <div className="mt-12 flex justify-center">
-          <div className="w-full max-w-2xl rounded-3xl border border-border bg-card/90 p-6 text-left shadow-[0_20px_60px_-45px_rgba(15,23,42,0.35)] backdrop-blur sm:p-8">
-            <h3 className="text-lg font-semibold">Cómo jugar</h3>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">
-              <li>Cada jugador toca su carta una sola vez para ver su rol.</li>
-              <li>Todos menos uno reciben la misma palabra.</li>
-              <li>
-                Uno de vosotros es el <span className="font-semibold text-rose-600 dark:text-rose-300">Impostor</span>.
-              </li>
-              <li>Por turnos, describan la palabra sin revelarla.</li>
-              <li>Descubran quién es el impostor antes de que os descubra.</li>
-            </ul>
-          </div>
-        </div>
+        <HowToPlayCard />
       </div>
     </div>
   )
