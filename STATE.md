@@ -118,20 +118,39 @@ Si el juego crece:
 - `domain/game/word-repository.ts` o `data/words.ts` para desacoplar dataset del motor
 
 ### Fase 6 — Calidad y pruebas
-- tests unitarios para `domain/game/engine.ts`
-- tests de hooks para estado si se crea `useImpostorGame`
-- smoke test UI mínimo
+
+#### Stack elegido
+- `Vitest` como runner principal por ser la opción más ligera y estándar para TypeScript/Next en tests unitarios puros.
+- entorno `node` para no meter `jsdom` ni Testing Library antes de necesitarlos de verdad.
+- `vitest.config.ts` mínimo con alias `@` y foco inicial en `domain/**/*.test.ts`.
+
+#### Alcance cubierto en esta ronda
+- `domain/game/engine.ts` cubierto con 11 tests unitarios.
+- casos cubiertos:
+  - selección aleatoria controlada (`pickRandomItem`)
+  - shuffle sin mutación del array original (`shuffleArray`)
+  - elección de primer jugador evitando repetir cuando aplica (`pickFirstPlayer`)
+  - resolución de modos normales/crazy (`resolveGameMode`)
+  - asignación de roles en `normal`, `one-innocent`, `no-impostor` y `all-impostors` (`buildRoles`)
+  - integración base de creación de ronda (`createGameRound`)
+- para hacer los tests deterministas se reemplazó el `sort(() => Math.random() - 0.5)` por un Fisher-Yates simple e inyectable con `random` opcional. Mantiene el comportamiento del juego y mejora la testabilidad.
+
+#### Huecos pendientes
+- `hooks/use-impostor-game.ts`: aún sin tests; puede cubrirse más adelante con `@testing-library/react` cuando compense añadir `jsdom`.
+- `hooks/use-reveal-timers.ts`: requiere tests temporales con fake timers; buen siguiente paso si queremos blindar reveals.
+- sin smoke tests de UI todavía; deliberado para evitar sobreinfraestructura en esta primera ronda.
 
 ## Riesgos actuales
 - `setup-screen.tsx` ya quedó en una composición razonable (hero + shell + CTA); seguir troceándolo ahora tendría retorno bajo y más riesgo de ruido que beneficio.
 - `playing-screen.tsx` ya soltó sus bloques presentacionales más claros; no conviene seguir fragmentándolo por deporte.
-- La aleatoriedad usa `Math.random()` y `sort(() => Math.random() - 0.5)`, suficiente para este juego casual pero no ideal si luego queremos test reproducible.
+- La aleatoriedad sigue basada en `Math.random()`, pero ahora el motor acepta una función `random` opcional para tests deterministas; si algún día queremos seed/debug reproducible, conviene encapsularla en un servicio.
 - `currentMode` se mantiene en estado pero aún no está reflejado en UI; hoy no rompe nada, pero sigue siendo deuda si la app quiere exponer modos especiales.
 - `useRevealTimers` depende del índice del jugador para los timers; es consistente con la UI actual, pero si en el futuro hay reordenaciones dinámicas convendría migrar a una clave estable.
 
 ## Validación ejecutada
-- `pnpm build` ✅
+- `pnpm test` ✅
 - `pnpm exec tsc --noEmit` ✅
+- `pnpm build` ✅
 
 ## Cierre de etapa: refactor estructural
 La ronda de refactor estructural puede darse por cerrada aquí.
@@ -143,7 +162,8 @@ Motivo:
 - el último corte en setup separa justo la entrada y la lista de jugadores, que era el punto más natural que quedaba.
 
 ## Próximos pasos recomendados (fuera del refactor estructural)
-1. Añadir tests unitarios para `domain/game/engine.ts` y smoke tests básicos para los hooks nuevos.
-2. Decidir si `currentMode` debe mostrarse en UI o eliminarse del estado hasta que haga falta explícitamente.
-3. Si se quiere más seguridad para reveal/timers, migrar de índice a identificador estable por jugador.
-4. Si el juego evoluciona, atacar mejoras de producto o reglas, no más cortes de componentes salvo necesidad real.
+1. Añadir tests a `hooks/use-reveal-timers.ts` con fake timers; es el siguiente punto con mejor ROI tras el motor.
+2. Valorar tests ligeros de `use-impostor-game.ts` para reglas de setup/reset/new round cuando compense introducir `jsdom`.
+3. Decidir si `currentMode` debe mostrarse en UI o eliminarse del estado hasta que haga falta explícitamente.
+4. Si se quiere más seguridad para reveal/timers, migrar de índice a identificador estable por jugador.
+5. Si el juego evoluciona, atacar mejoras de producto o reglas, no más cortes de componentes salvo necesidad real.

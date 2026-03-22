@@ -11,31 +11,49 @@ const CRAZY_GAME_MODES: Exclude<GameMode, "normal">[] = [
   "no-impostor",
 ]
 
-export function pickRandomItem<T>(items: readonly T[]): T {
-  return items[Math.floor(Math.random() * items.length)]
+type RandomSource = () => number
+
+function toRandomIndex(length: number, random: RandomSource): number {
+  return Math.floor(random() * length)
 }
 
-export function shuffleArray<T>(items: readonly T[]): T[] {
-  return [...items].sort(() => Math.random() - 0.5)
+export function pickRandomItem<T>(items: readonly T[], random: RandomSource = Math.random): T {
+  return items[toRandomIndex(items.length, random)]
 }
 
-export function pickFirstPlayer(names: string[], current?: string): string {
+export function shuffleArray<T>(items: readonly T[], random: RandomSource = Math.random): T[] {
+  const shuffledItems = [...items]
+
+  for (let index = shuffledItems.length - 1; index > 0; index -= 1) {
+    const swapIndex = toRandomIndex(index + 1, random)
+    ;[shuffledItems[index], shuffledItems[swapIndex]] = [shuffledItems[swapIndex], shuffledItems[index]]
+  }
+
+  return shuffledItems
+}
+
+export function pickFirstPlayer(names: string[], current?: string, random: RandomSource = Math.random): string {
   if (names.length === 0) return ""
   if (names.length === 1) return names[0]
 
   const options = current ? names.filter((name) => name !== current) : names
-  return pickRandomItem(options.length ? options : names)
+  return pickRandomItem(options.length ? options : names, random)
 }
 
-export function resolveGameMode(crazyMode: boolean): GameMode {
-  if (crazyMode && Math.random() < CRAZY_MODE_PROBABILITY) {
-    return pickRandomItem(CRAZY_GAME_MODES)
+export function resolveGameMode(crazyMode: boolean, random: RandomSource = Math.random): GameMode {
+  if (crazyMode && random() < CRAZY_MODE_PROBABILITY) {
+    return pickRandomItem(CRAZY_GAME_MODES, random)
   }
 
   return "normal"
 }
 
-export function buildRoles(names: string[], selectedWord: string, mode: GameMode): string[] {
+export function buildRoles(
+  names: string[],
+  selectedWord: string,
+  mode: GameMode,
+  random: RandomSource = Math.random,
+): string[] {
   const roles = names.map(() => selectedWord)
 
   if (mode === "all-impostors") {
@@ -43,8 +61,7 @@ export function buildRoles(names: string[], selectedWord: string, mode: GameMode
   }
 
   if (mode === "one-innocent") {
-    const innocentIndex = Math.floor(Math.random() * roles.length)
-    roles[innocentIndex] = selectedWord
+    const innocentIndex = toRandomIndex(roles.length, random)
     return roles.map((_, index) => (index === innocentIndex ? selectedWord : IMPOSTOR_ROLE))
   }
 
@@ -52,16 +69,21 @@ export function buildRoles(names: string[], selectedWord: string, mode: GameMode
     return roles
   }
 
-  const impostorIndex = Math.floor(Math.random() * roles.length)
+  const impostorIndex = toRandomIndex(roles.length, random)
   roles[impostorIndex] = IMPOSTOR_ROLE
   return roles
 }
 
-export function createGameRound(playerNames: string[], crazyMode: boolean, currentFirstPlayer?: string): GameRound {
-  const selectedWord = pickRandomItem(palabrasJuego)
-  const shuffledNames = shuffleArray(playerNames)
-  const mode = resolveGameMode(crazyMode)
-  const roles = shuffleArray(buildRoles(shuffledNames, selectedWord, mode))
+export function createGameRound(
+  playerNames: string[],
+  crazyMode: boolean,
+  currentFirstPlayer?: string,
+  random: RandomSource = Math.random,
+): GameRound {
+  const selectedWord = pickRandomItem(palabrasJuego, random)
+  const shuffledNames = shuffleArray(playerNames, random)
+  const mode = resolveGameMode(crazyMode, random)
+  const roles = shuffleArray(buildRoles(shuffledNames, selectedWord, mode, random), random)
 
   const players: Player[] = shuffledNames.map((name, index) => ({
     name,
@@ -72,6 +94,6 @@ export function createGameRound(playerNames: string[], crazyMode: boolean, curre
   return {
     mode,
     players,
-    firstPlayer: pickFirstPlayer(shuffledNames, currentFirstPlayer),
+    firstPlayer: pickFirstPlayer(shuffledNames, currentFirstPlayer, random),
   }
 }
