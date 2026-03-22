@@ -102,7 +102,8 @@ Estado:
 - [x] extraído `components/game/first-player-panel.tsx`
 - [x] extraído `components/game/how-to-play-card.tsx`
 - [x] extraído `components/game/crazy-mode-toggle.tsx`
-- [ ] valorar `players-list.tsx` o `players-input.tsx` solo si el siguiente corte sigue siendo pequeño y seguro
+- [x] extraído `components/game/player-input.tsx`
+- [x] extraído `components/game/players-list.tsx`
 
 Criterio aplicado:
 - componentes presentacionales primero
@@ -122,8 +123,8 @@ Si el juego crece:
 - smoke test UI mínimo
 
 ## Riesgos actuales
-- `setup-screen.tsx` sigue agrupando varias subsecciones visuales (hero, alta de jugadores y lista); el siguiente corte natural sería fragmentarlo solo si se hace sin tocar clases ni markup sensible.
-- `playing-screen.tsx` ya soltó sus dos bloques presentacionales más claros; el resto del fichero está bastante cerca de una composición razonable y no conviene trocearlo por deporte.
+- `setup-screen.tsx` ya quedó en una composición razonable (hero + shell + CTA); seguir troceándolo ahora tendría retorno bajo y más riesgo de ruido que beneficio.
+- `playing-screen.tsx` ya soltó sus bloques presentacionales más claros; no conviene seguir fragmentándolo por deporte.
 - La aleatoriedad usa `Math.random()` y `sort(() => Math.random() - 0.5)`, suficiente para este juego casual pero no ideal si luego queremos test reproducible.
 - `currentMode` se mantiene en estado pero aún no está reflejado en UI; hoy no rompe nada, pero sigue siendo deuda si la app quiere exponer modos especiales.
 - `useRevealTimers` depende del índice del jugador para los timers; es consistente con la UI actual, pero si en el futuro hay reordenaciones dinámicas convendría migrar a una clave estable.
@@ -132,8 +133,17 @@ Si el juego crece:
 - `pnpm build` ✅
 - `pnpm exec tsc --noEmit` ✅
 
-## Siguientes pasos recomendados
-1. Si se quiere otro corte de UI sin riesgo, probar con `players-list.tsx` o `players-input.tsx` dentro de `setup-screen.tsx`, manteniendo el JSX prácticamente idéntico.
-2. Añadir tests unitarios para `domain/game/engine.ts` y smoke tests básicos para los hooks nuevos.
-3. Decidir si `currentMode` debe mostrarse en UI o eliminarse del estado hasta que haga falta explícitamente.
-4. Si se quiere más seguridad para reveal/timers, migrar de índice a identificador estable por jugador.
+## Cierre de etapa: refactor estructural
+La ronda de refactor estructural puede darse por cerrada aquí.
+
+Motivo:
+- `app/page.tsx` ya quedó como composición fina.
+- dominio y temporizadores están aislados en `domain/` y `hooks/`.
+- `setup-screen.tsx` y `playing-screen.tsx` ya tienen un tamaño y responsabilidad razonables para una app pequeña.
+- el último corte en setup separa justo la entrada y la lista de jugadores, que era el punto más natural que quedaba.
+
+## Próximos pasos recomendados (fuera del refactor estructural)
+1. Añadir tests unitarios para `domain/game/engine.ts` y smoke tests básicos para los hooks nuevos.
+2. Decidir si `currentMode` debe mostrarse en UI o eliminarse del estado hasta que haga falta explícitamente.
+3. Si se quiere más seguridad para reveal/timers, migrar de índice a identificador estable por jugador.
+4. Si el juego evoluciona, atacar mejoras de producto o reglas, no más cortes de componentes salvo necesidad real.

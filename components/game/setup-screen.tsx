@@ -1,10 +1,11 @@
-import { Plus, Play, X } from "lucide-react"
+import { Play } from "lucide-react"
 
 import { CrazyModeToggle } from "@/components/game/crazy-mode-toggle"
+import { PlayerInput } from "@/components/game/player-input"
+import { PlayersList } from "@/components/game/players-list"
 import { ThemeToggle } from "@/components/game/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 
 type SetupScreenProps = {
   inputName: string
@@ -80,54 +81,13 @@ export function SetupScreen({
 
           <Card className="rounded-3xl border-border/80 bg-card/90 p-6 shadow-[0_32px_90px_-65px_rgba(15,23,42,0.5)] backdrop-blur sm:p-8 motion-reduce:animate-none animate-[fade-up_700ms_ease-out_120ms]">
             <div className="space-y-6">
-              <div className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Jugadores</p>
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <Input
-                    type="text"
-                    placeholder="Nombre del jugador"
-                    value={inputName}
-                    onChange={(event) => onInputNameChange(event.target.value)}
-                    onKeyDown={(event) => event.key === "Enter" && onAddPlayer()}
-                    className="h-12 rounded-full border-border bg-background px-5 text-base text-foreground placeholder:text-muted-foreground focus-visible:ring-ring/40"
-                  />
-                  <Button
-                    onClick={onAddPlayer}
-                    variant="outline"
-                    className="h-12 rounded-full border-border bg-card px-5 text-sm font-semibold text-foreground hover:bg-accent"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Agregar
-                  </Button>
-                </div>
-              </div>
+              <PlayerInput
+                inputName={inputName}
+                onInputNameChange={onInputNameChange}
+                onAddPlayer={onAddPlayer}
+              />
 
-              {playerNames.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Lista</h3>
-                    <span className="text-xs text-muted-foreground">{playerNames.length}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {playerNames.map((name) => (
-                      <div
-                        key={name}
-                        className="flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-sm text-foreground"
-                      >
-                        <span className="font-medium">{name}</span>
-                        <button
-                          type="button"
-                          onClick={() => onRemovePlayer(name)}
-                          className="text-muted-foreground transition hover:text-foreground"
-                          aria-label={`Eliminar ${name}`}
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <PlayersList playerNames={playerNames} onRemovePlayer={onRemovePlayer} />
 
               <CrazyModeToggle crazyMode={crazyMode} onToggle={() => onCrazyModeChange(!crazyMode)} />
 
