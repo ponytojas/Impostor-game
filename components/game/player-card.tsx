@@ -11,6 +11,7 @@ type PlayerCardProps = {
 export function PlayerCard({ player, index, timers, onToggle }: PlayerCardProps) {
   return (
     <button
+      data-testid={`player-card-${index}`}
       onClick={() => onToggle(index)}
       style={{ animationDelay: `${index * 60}ms` }}
       className={`group relative flex h-56 animate-[fade-up_600ms_ease-out_forwards] flex-col items-center justify-center gap-3 rounded-3xl border px-6 py-8 text-center shadow-sm transition-all duration-300 motion-reduce:animate-none sm:h-60 lg:h-64 ${
@@ -28,6 +29,7 @@ export function PlayerCard({ player, index, timers, onToggle }: PlayerCardProps)
               ? "border-rose-200 bg-rose-100/80 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-100"
               : "border-emerald-200 bg-emerald-100/80 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-100"
           }`}
+          data-testid="player-timer"
         >
           {timers[index]}s
         </div>
@@ -53,6 +55,7 @@ export function PlayerCard({ player, index, timers, onToggle }: PlayerCardProps)
           </span>
           <h3 className="text-2xl font-semibold">{player.name}</h3>
           <div
+            data-testid="player-role"
             className={`rounded-2xl border px-6 py-3 text-center text-2xl font-semibold tracking-wide ${
               player.role === IMPOSTOR_ROLE
                 ? "border-rose-200 bg-rose-100/70 text-rose-900 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-100"

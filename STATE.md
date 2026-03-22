@@ -159,10 +159,44 @@ Si el juego crece:
 - `currentMode` se mantiene en estado pero aún no está reflejado en UI; hoy no rompe nada, pero sigue siendo deuda si la app quiere exponer modos especiales.
 - `useRevealTimers` depende del índice del jugador para los timers; es consistente con la UI actual, pero si en el futuro hay reordenaciones dinámicas convendría migrar a una clave estable.
 
+## Fase 7 — E2E con Playwright
+
+### Stack elegido
+- `Playwright` con `@playwright/test`.
+- un único spec e2e en `e2e/game-flow.spec.ts`.
+- `webServer` integrado en `playwright.config.ts` levantando `next dev` en `127.0.0.1:3000`.
+- uso de `page.clock` para avanzar el temporizador de reveal sin esperas reales ni fragilidad temporal.
+- selectores estables mínimos con `data-testid` solo donde aportan valor (`first-player-name`, `player-card-*`, `player-role`, `player-timer`).
+
+### Alcance cubierto en esta ronda
+El spec happy path actual cubre un flujo representativo de extremo a extremo:
+- abrir home
+- añadir 3 jugadores
+- empezar partida
+- comprobar que existe un primer jugador válido
+- revelar una carta y validar que muestra un rol real (`IMPOSTOR` o una palabra del catálogo)
+- verificar el countdown visible inicial de `5s`
+- adelantar el reloj y comprobar auto-hide real de la carta
+- lanzar `Nueva Ronda` y comprobar que el flujo sigue operativo
+- usar `Cambiar Jugadores` y validar vuelta al setup limpio
+
+### Limitaciones actuales
+- solo hay un happy path; no cubre errores de setup, duplicados ni modo crazy.
+- la validación e2e depende de que el host tenga instaladas las dependencias de navegador de Playwright.
+- en este entorno actual faltan libs del sistema para Chromium, así que `pnpm test:e2e` queda bloqueado a nivel host aunque el spec/config ya están montados.
+- no se añadieron snapshots ni pruebas visuales a propósito; para esta app pequeña hoy aportan poco frente al coste de mantenimiento.
+
+### Siguientes ampliaciones recomendadas
+1. añadir un spec corto para `crazyMode` validando que la ronda arranca y la UI sigue siendo jugable.
+2. cubrir un caso de setup inválido visible en UI si en el futuro se reemplaza `alert` por feedback inline/toast.
+3. comprobar explícitamente el reshuffle del primer jugador desde el botón `Cambiar`.
+4. si aparecen más flujos, crear helpers/page objects muy pequeños; todavía no compensa abstraer más.
+
 ## Validación ejecutada
 - `pnpm test` ✅
 - `pnpm exec tsc --noEmit` ✅
 - `pnpm build` ✅
+- `pnpm test:e2e` ⚠️ bloqueado por dependencias de sistema de Playwright/Chromium ausentes en el host (`playwright install-deps` no disponible desde este runtime)
 
 ## Cierre de etapa: refactor estructural
 La ronda de refactor estructural puede darse por cerrada aquí.

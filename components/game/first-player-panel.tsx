@@ -24,7 +24,9 @@ export function FirstPlayerPanel({ firstPlayer, onShuffle }: FirstPlayerPanelPro
               <Shuffle className="h-4 w-4" />
               Cambiar
             </Button>
-            <p className="text-3xl font-semibold leading-tight sm:text-4xl">{firstPlayer || "Sin seleccionar"}</p>
+            <p data-testid="first-player-name" className="text-3xl font-semibold leading-tight sm:text-4xl">
+              {firstPlayer || "Sin seleccionar"}
+            </p>
           </div>
         </div>
       </div>
